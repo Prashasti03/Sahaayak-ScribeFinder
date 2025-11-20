@@ -6,14 +6,24 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export const register = async (req, res) => {
-  console.log("Incoming register request", req.body)
+  console.log("Incoming register request - Body:", req.body);
+  console.log("Incoming register request - Role:", req.body.role);
+  console.log("Incoming register request - Files:", req.files);
+  console.log("Files received:", req.files); // Debug log
+
+  console.log("=== REGISTRATION DEBUG ===");
+  console.log("Role:", req.body.role);
+  console.log("Body fields:", Object.keys(req.body));
+  console.log("Files received:", req.files);
+  console.log("=== END DEBUG ===");
+
   try {
     const {
       name,
       email,
       phone,
       password,
-      profile_photo,
+      // profile_photo,
       role,
       educational_qualification,
       reader,
@@ -26,12 +36,18 @@ export const register = async (req, res) => {
       city,
       numLanguages,
       languages,
-      audio_sample_url,
-      writing_sample_url,
+      // audio_sample_url,
+      // writing_sample_url,
       address,
       numCandidates,
       numScribes,
     } = req.body;
+
+    // Handle file paths
+    const profile_photo = req.files?.profile_photo ? `/uploads/profiles/${req.files.profile_photo[0].filename}` : "";
+    const audio_sample_url = req.files?.audio_sample ? `/uploads/audio/${req.files.audio_sample[0].filename}` : "";
+    const writing_sample_url = req.files?.writing_sample ? `/uploads/writing/${req.files.writing_sample[0].filename}` : "";
+    
     if (!name || !email || !phone || !password || !role) {
       return res.status(404).json({
         message: "Missing required fields",
@@ -132,6 +148,9 @@ export const register = async (req, res) => {
             user: user._id,
             educational_qualification: c.educational_qualification,
           });
+
+          newNGO.numCandidates += 1;
+
           } catch (error) {
             console.error(`Error creating NGO candidate ${c.email}:`, error);
           }
@@ -161,14 +180,20 @@ export const register = async (req, res) => {
             numLanguages: s.numLanguages,
             languages: s.languages,
             state: s.state,
-            city: s.city
+            city: s.city,
+            audio_sample_url: s.audio_sample_url, // Add this
+            writing_sample_url: s.writing_sample_url
           });
+
+          newNGO.numScribes +=1;
+
           } catch (error) {
             console.error(`Error creating NGO scribe ${s.email}:`, error);
           }
         }
       }
-      await newNGO.save()
+      await newNGO.save();
+      roleData = newNGO;
     }
 
     
