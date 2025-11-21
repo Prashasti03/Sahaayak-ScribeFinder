@@ -574,6 +574,8 @@ const Register = () => {
   const [role, setRole] = useState("candidate");
   const [numLanguages, setNumLanguages] = useState(0);
   const [languages, setLanguages] = useState([]);
+   const [selectedState, setSelectedState] = useState(""); // For state dropdown
+  const [cities, setCities] = useState([]); // For cities dropdown
 
   const [input, setInput] = useState({
     name: "",
@@ -603,6 +605,19 @@ const Register = () => {
 
   const navigate = useNavigate();
 
+   // States and Cities Data
+  const statesAndCities = {
+    "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Latur", "Thane", "Nashik", "Aurangabad", "Solapur"],
+    "Madhya Pradesh": ["Indore", "Bhopal", "Jabalpur", "Gwalior", "Ujjain", "Sagar", "Rewa"],
+    "Delhi": ["New Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi", "Central Delhi"],
+    "Karnataka": ["Bangalore", "Mysore", "Hubli", "Mangalore", "Belgaum", "Gulbarga", "Dharwad"],
+    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Trichy", "Salem", "Tirunelveli", "Vellore"],
+    "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Allahabad", "Meerut", "Ghaziabad"],
+    "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar"],
+    "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner", "Ajmer", "Pushkar"],
+    "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri", "Darjeeling"]
+  };
+
   const languageOptions = [
     { value: "English", label: "English" },
     { value: "Hindi", label: "Hindi" },
@@ -617,6 +632,26 @@ const Register = () => {
     { value: "Malayalam", label: "Malayalam" },
     { value: "Other", label: "Other" },
   ];
+
+  // Handle state selection
+  const handleStateChange = (selectedOption) => {
+    const state = selectedOption?.value || "";
+    setSelectedState(selectedOption);
+    setCities(statesAndCities[state] || []);
+    
+    // Update form data
+    setInput(prev => ({ 
+      ...prev, 
+      state: state,
+      city: "" // Reset city when state changes
+    }));
+  };
+
+  // Handle city selection
+  const handleCityChange = (selectedOption) => {
+    const city = selectedOption?.value || "";
+    setInput(prev => ({ ...prev, city: city }));
+  };
 
   const changeEventHandler = (e) => {
     setInput({ ...input, [e.target.name]: e.target.value });
@@ -741,6 +776,17 @@ const Register = () => {
     }
   }; // ← This was missing - closing the submitHandler function
 
+   // Prepare options for dropdowns
+  const stateOptions = Object.keys(statesAndCities).map(state => ({
+    value: state,
+    label: state
+  }));
+
+  const cityOptions = cities.map(city => ({
+    value: city,
+    label: city
+  }));
+
   // This is the component return - it was incorrectly inside submitHandler
   return (
     <div>
@@ -863,24 +909,30 @@ const Register = () => {
               {/* Scribe Specific */}
               {role === "scribe" && (
                 <>
+                  {/* State Dropdown */}
                   <div>
                     <Label>State</Label>
-                    <Input
-                      type="text"
-                      name="state"
-                      value={input.state}
-                      onChange={changeEventHandler}
-                      className="mt-2"
+                    <Select
+                      options={stateOptions}
+                      value={selectedState}
+                      onChange={handleStateChange}
+                      placeholder="Select State"
+                      isClearable
+                      className="mt-1"
                     />
                   </div>
+
+                  {/* City Dropdown */}
                   <div>
                     <Label>City</Label>
-                    <Input
-                      type="text"
-                      name="city"
-                      value={input.city}
-                      onChange={changeEventHandler}
-                      className="mt-2"
+                    <Select
+                      options={cityOptions}
+                      value={cityOptions.find(city => city.value === input.city)}
+                      onChange={handleCityChange}
+                      placeholder="Select City"
+                      isClearable
+                      isDisabled={!input.state} // Disable if no state selected
+                      className="mt-1"
                     />
                   </div>
 
