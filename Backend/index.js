@@ -7,6 +7,7 @@ import userRoute from './routes/user.route.js'
 import examRequestRoute from './routes/examRequest.route.js'
 import path from "path"
 import { fileURLToPath } from "url";
+import scribeRoute from './routes/scribe.route.js'
 
 dotenv.config({})
 const app = express();
@@ -34,6 +35,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/user",userRoute)
 app.use("/api/exam",examRequestRoute)
+app.use("/api/scribes", scribeRoute)
 
 app.listen(PORT, () => {
     connectDB()
