@@ -29,7 +29,7 @@ const appRouter = createBrowserRouter([
     element: <Scribes/>
   },
   {
-    path: "/ngos",
+    path: "/Ngos",
     element: <NGO/>
   },
 ])

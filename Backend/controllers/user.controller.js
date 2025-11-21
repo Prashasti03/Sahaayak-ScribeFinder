@@ -218,27 +218,30 @@ export const login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
     if (!email || !password || !role) {
-      return res.status(404).json({
+      return res.status(400).json({
         message: "Missing required fields",
         success: false,
       });
     }
+
     // check if email exists in db or not
     let user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({
-        message: "Incorrect email",
+      return res.status(401).json({
+        message: "Incorrect email or password",
         success: false,
       });
     }
+
     // check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(404).json({
-        message: "Incorrect password",
+      return res.status(401).json({
+        message: "Incorrect email or password",
         success: false,
       });
     }
+
     // check role
     if (user.role !== role) {
       return res.status(403).json({
@@ -246,23 +249,43 @@ export const login = async (req, res) => {
         success: false,
       });
     }
+
+    // Find role-specific document
+    let roleSpecificId = null;
+    if (role === 'candidate') {
+      const candidate = await Candidate.findOne({ user: user._id });
+      roleSpecificId = candidate?._id;
+    } else if (role === 'scribe') {
+      const scribe = await Scribe.findOne({ user: user._id });
+      roleSpecificId = scribe?._id;
+    } else if (role === 'ngo') {
+      const ngo = await NGO.findOne({ user: user._id });
+      roleSpecificId = ngo?._id;
+    }
+
     // token generation
     const tokenData = {
       userId: user._id,
+      userRole: user.role,
+      ...(roleSpecificId && { roleId: roleSpecificId }) // Include role-specific ID if exists
     };
+
     const token = jwt.sign(tokenData, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
+
     // create user
-    user = {
+    const userResponse = {
       _id: user._id,
       name: user.name,
       email: user.email,
       phone: user.phone,
-      password: user.hashedPassword,
+      // password: user.hashedPassword,
       profile_photo: user.profile_photo,
       role: user.role,
+      roleId: roleSpecificId // Include role-specific ID in response
     };
+    
     // store token in cookies
     return res
       .status(200)
@@ -272,8 +295,8 @@ export const login = async (req, res) => {
         sameSite: "Strict",
       })
       .json({
-        message: "logged in successfully",
-        user,
+        message: "Logged in successfully",
+        user: userResponse,
         success: true,
       });
   } catch (error) {

@@ -78,14 +78,15 @@ const authenticateToken = async (req, res, next) => {
     req.userId = decoded.userId;
     req.userRole = user.role;
     req.user = user; // Attach full user object if needed
+    req.roleId = decoded.roleId; // Add role-specific ID
 
     // Set role-specific IDs if needed
     if (user.role === 'scribe') {
-      req.scribeId = decoded.scribeId; // Keep if you have separate scribe IDs
+      req.scribeId = decoded.roleId; // Keep if you have separate scribe IDs
     } else if (user.role === 'candidate') {
-      req.candidateId = decoded.candidateId; // Keep if you have separate candidate IDs
+      req.candidateId = decoded.roleId; // Keep if you have separate candidate IDs
     } else if (user.role === 'ngo') {
-      req.ngoId = decoded.ngoId; // Keep if you have separate NGO IDs
+      req.ngoId = decoded.roleId; // Keep if you have separate NGO IDs
     }
 
     next();
