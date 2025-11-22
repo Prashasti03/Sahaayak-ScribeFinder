@@ -411,22 +411,39 @@ const Candidates = () => {
   };
 
   const handleScribeRequest = async (scribeId) => {
-    try {
-      const response = await axios.post('/api/exam/request', {
-        scribeId,
-        examInfo
-      }, {
-        withCredentials: true
-      });
-
-      if (response.data.success) {
-        toast.success('Scribe request sent successfully!');
-      }
-    } catch (error) {
-      console.error('Error sending request:', error);
-      toast.error('Failed to send request');
+  try {
+    // Validate exam info
+    if (!examInfo.examinationName || !examInfo.date || !examInfo.examLocation) {
+      toast.error('Please fill all required exam information');
+      return;
     }
-  };
+
+    const response = await axios.post('http://localhost:5000/api/exam/request', {
+      scribeId,
+      examInfo
+    }, {
+      withCredentials: true,
+    });
+
+    if (response.data.success) {
+      toast.success('Scribe request sent successfully!');
+      // Clear exam info or reset form
+      setExamInfo({
+        examinationName: '',
+        type: [],
+        need: [],
+        language: '',
+        date: '',
+        reportingTime: '',
+        examLocation: ''
+      });
+    }
+  } catch (error) {
+    console.error('Error sending request:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to send request';
+    toast.error(errorMessage);
+  }
+};
 
   const handleViewProfile = (scribe) => {
     // You can implement a modal or separate profile page

@@ -308,12 +308,190 @@ export const login = async (req, res) => {
   }
 };
 
+// export const logout = (req, res) => {
+//   try {
+//     return res.status(200).cookie("token", "", { maxAge: 0 }).json({
+//       message: "Logged out successfully",
+//       success: true,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       message: "Server error during logout",
+//       success: false,
+//     });
+//   }
+// };
+
+// export const updateProfile = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       email,
+//       phone,
+//       profile_photo,
+//       educational_qualification,
+//       reader,
+//       writer,
+//       online,
+//       offline,
+//       written,
+//       mcq,
+//       numLanguages,
+//       languages,
+//       state,
+//       city,
+//       audio_sample_url,
+//       writing_sample_url,
+//       address,
+//       numCandidates,
+//       numScribes,
+//     } = req.body;
+
+//     if (!name || !email || !phone) {
+//       return res.status(404).json({
+//         message: "Missing required fields",
+//         success: false,
+//       });
+//     }
+
+//     // check if user is logged in or not
+//     const userId = req.id; // middleware authentication
+//     let user = await User.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({
+//         message: "User not found. You need to login first to update profile",
+//         success: false,
+//       });
+//     }
+//     // update database profile
+//     if (name) {
+//       user.name = name;
+//     }
+//     if (email) {
+//       user.email = email;
+//     }
+//     if (phone) {
+//       user.phone = phone;
+//     }
+//     if (profile_photo) {
+//       user.profile_photo = profile_photo;
+//     }
+
+//     await user.save();
+
+//     // Update role-specific info
+//     let roleDoc;
+//     if (user.role === "candidate") {
+//       roleDoc = await Candidate.findOneAndUpdate(
+//         { user: user._id },
+//         { educational_qualification },
+//         { new: true }
+//       );
+//     } else if (user.role === "scribe") {
+//       const updateData = {
+//         educational_qualification,
+//         reader,
+//         writer,
+//         online,
+//         offline,
+//         written,
+//         mcq,
+//         numLanguages,
+//         languages,
+//         state,
+//         city,
+//         audio_sample_url,
+//         writing_sample_url,
+//       };
+//       roleDoc = await Scribe.findOneAndUpdate({ user: user._id }, updateData, {
+//         new: true,
+//       });
+//     } else if (user.role === "ngo") {
+//       const updateData = {
+//         address,
+//         numCandidates,
+//         numScribes,
+//       };
+//       roleDoc = await NGO.findOneAndUpdate({ user: user._id }, updateData, {
+//         new: true,
+//       });
+//     }
+
+//     // create user
+//     user = {
+//       _id: user._id,
+//       name: user.name,
+//       email: user.email,
+//       phone: user.phone,
+//       password: user.hashedPassword,    // not mentioned in job portal project
+//       profile_photo: user.profile_photo,
+//       role: user.role,
+//     };
+
+//     return res.status(200).json({
+//       message: "Profile updated successfully",
+//       user,
+//       roleData: roleDoc,
+//       success: true,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       message: "Server error while updating profile",
+//       success: false,
+//     });
+//   }
+// };
+
+
+
+
+// Add this getProfile function
+export const getProfile = async (req, res) => {
+  try {
+    // Use req.userId (from updated isAuthenticated.js)
+    const user = await User.findById(req.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+        success: false
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        profile_photo: user.profile_photo,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    res.status(500).json({
+      message: "Server error while fetching profile",
+      success: false
+    });
+  }
+};
+
+// Fixed logout function
 export const logout = (req, res) => {
   try {
-    return res.status(200).cookie("token", "", { maxAge: 0 }).json({
-      message: "Logged out successfully",
-      success: true,
-    });
+    return res
+      .status(200)
+      .clearCookie("token", {
+        httpOnly: true,
+        sameSite: 'Strict'
+      })
+      .json({
+        message: "Logged out successfully",
+        success: true,
+      });
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -323,6 +501,7 @@ export const logout = (req, res) => {
   }
 };
 
+// Fixed updateProfile function
 export const updateProfile = async (req, res) => {
   try {
     const {
@@ -349,14 +528,14 @@ export const updateProfile = async (req, res) => {
     } = req.body;
 
     if (!name || !email || !phone) {
-      return res.status(404).json({
+      return res.status(400).json({ // Changed from 404 to 400
         message: "Missing required fields",
         success: false,
       });
     }
 
-    // check if user is logged in or not
-    const userId = req.id; // middleware authentication
+    // Use req.userId (from updated isAuthenticated.js)
+    const userId = req.userId;
     let user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -364,16 +543,11 @@ export const updateProfile = async (req, res) => {
         success: false,
       });
     }
-    // update database profile
-    if (name) {
-      user.name = name;
-    }
-    if (email) {
-      user.email = email;
-    }
-    if (phone) {
-      user.phone = phone;
-    }
+
+    // Update user fields
+    user.name = name;
+    user.email = email;
+    user.phone = phone;
     if (profile_photo) {
       user.profile_photo = profile_photo;
     }
@@ -386,7 +560,7 @@ export const updateProfile = async (req, res) => {
       roleDoc = await Candidate.findOneAndUpdate(
         { user: user._id },
         { educational_qualification },
-        { new: true }
+        { new: true, upsert: true } // Added upsert: true
       );
     } else if (user.role === "scribe") {
       const updateData = {
@@ -401,37 +575,44 @@ export const updateProfile = async (req, res) => {
         languages,
         state,
         city,
-        audio_sample_url,
-        writing_sample_url,
       };
-      roleDoc = await Scribe.findOneAndUpdate({ user: user._id }, updateData, {
-        new: true,
-      });
+      // Only update audio/writing samples if provided
+      if (audio_sample_url) updateData.audio_sample_url = audio_sample_url;
+      if (writing_sample_url) updateData.writing_sample_url = writing_sample_url;
+      
+      roleDoc = await Scribe.findOneAndUpdate(
+        { user: user._id }, 
+        updateData, 
+        { new: true, upsert: true }
+      );
     } else if (user.role === "ngo") {
       const updateData = {
         address,
-        numCandidates,
-        numScribes,
       };
-      roleDoc = await NGO.findOneAndUpdate({ user: user._id }, updateData, {
-        new: true,
-      });
+      // Only update counts if provided
+      if (numCandidates) updateData.numCandidates = numCandidates;
+      if (numScribes) updateData.numScribes = numScribes;
+      
+      roleDoc = await NGO.findOneAndUpdate(
+        { user: user._id }, 
+        updateData, 
+        { new: true, upsert: true }
+      );
     }
 
-    // create user
-    user = {
+    // Return user without password
+    const userResponse = {
       _id: user._id,
       name: user.name,
       email: user.email,
       phone: user.phone,
-      password: user.hashedPassword,    // not mentioned in job portal project
       profile_photo: user.profile_photo,
       role: user.role,
     };
 
     return res.status(200).json({
       message: "Profile updated successfully",
-      user,
+      user: userResponse,
       roleData: roleDoc,
       success: true,
     });
